@@ -191,6 +191,188 @@ def update_profile(headless=True):
             
     return success
 
+def send_external_job_email(job_url, company_url):
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    recipient = "gudiyaravi02@gmail.com"
+    sender_email = os.environ.get("EMAIL_USER")
+    sender_password = os.environ.get("EMAIL_PASS")
+    
+    if not sender_email or not sender_password:
+        log_message(f"[!] Warning: Email credentials (EMAIL_USER / EMAIL_PASS) not set in Environment. Cannot send email.")
+        log_message(f"    Company Careers Link: {company_url or 'Please check Naukri Job Link'}")
+        log_message(f"    Naukri Job Link: {job_url}")
+        return False
+        
+    log_message(f"[*] Preparing to send email notification to {recipient}...")
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient
+        msg['Subject'] = "Naukri Bot: External Career Portal Job Link"
+        
+        body = f"""Hello,
+
+The Naukri automation bot has found an SAP Security job listing that requires applying directly on the company's career portal:
+
+- Naukri Job Link: {job_url}
+- Company Application Link: {company_url or 'See Naukri page'}
+
+Please click the link above to submit your application manually.
+
+Best regards,
+Your Naukri Automation Bot"""
+
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient, msg.as_string())
+        server.quit()
+        log_message(f"[+] Email successfully sent to {recipient}!")
+        return True
+    except Exception as e:
+        log_message(f"[!] Error sending email: {e}")
+        return False
+
+def handle_questionnaire(job_page):
+    log_message("[*] Checking for questionnaire / custom questions...")
+    fields = job_page.locator("input[type='text'], input[type='number'], input[type='tel'], textarea, select, input[type='radio'], input[type='checkbox']").all()
+    if not fields:
+        return False
+        
+    log_message(f"[*] Found {len(fields)} form fields. Attempting to answer...")
+    handled_radios = set()
+    
+    for field in fields:
+        try:
+            if not field.is_visible() or not field.is_enabled():
+                continue
+                
+            field_type = field.get_attribute("type")
+            field_name = field.get_attribute("name")
+            
+            if field_type == "radio":
+                if field_name in handled_radios:
+                    continue
+            
+            question_text = field.evaluate("""
+                el => {
+                    if (el.id) {
+                        let label = document.querySelector(`label[for="${el.id}"]`);
+                        if (label && label.innerText.trim()) return label.innerText.trim();
+                    }
+                    let container = el.closest('.question, .field, .row, .container, .form-group, li, tr, .tuple');
+                    if (container) {
+                        let lbl = container.querySelector('label, .label, .q-text, .question-text, span');
+                        if (lbl && lbl.innerText.trim()) return lbl.innerText.trim();
+                        return container.innerText.trim();
+                    }
+                    return '';
+                }
+            """)
+            
+            if not question_text:
+                continue
+                
+            q_lower = question_text.lower()
+            log_message(f"  Field Label/Question: '{question_text.strip()}'")
+            
+            answer = None
+            if "experience" in q_lower or "year" in q_lower:
+                answer = "3" if field_type == "number" else "2.6 Years"
+            elif "notice" in q_lower:
+                answer = "Immediate"
+            elif "expected" in q_lower and ("ctc" in q_lower or "salary" in q_lower or "lpa" in q_lower):
+                answer = "9,00,000" if field_type != "number" else "900000"
+            elif "current" in q_lower and ("ctc" in q_lower or "salary" in q_lower or "lpa" in q_lower):
+                answer = "6,00,000" if field_type != "number" else "600000"
+            elif "location" in q_lower or "city" in q_lower:
+                answer = "Bhubaneswar"
+            elif "sap" in q_lower or "security" in q_lower or "grc" in q_lower:
+                answer = "Yes" if field_type in ["radio", "checkbox"] else "2.6 Years"
+            elif "relocate" in q_lower or "ready" in q_lower:
+                answer = "Yes"
+                
+            if not answer:
+                if "yes" in q_lower or "no" in q_lower:
+                    answer = "Yes"
+                else:
+                    answer = "Yes" if field_type in ["radio", "checkbox"] else "Immediate"
+            
+            if field_type in ["radio", "checkbox"]:
+                value = field.get_attribute("value")
+                label_text = field.evaluate("""
+                    el => {
+                        let label = el.nextElementSibling || el.previousElementSibling;
+                        if (label) return label.innerText.trim().toLowerCase();
+                        return '';
+                    }
+                """)
+                
+                if answer.lower() == "yes":
+                    if (value and "yes" in value.lower() or "true" in value.lower() or "1" == value) or "yes" in label_text:
+                        field.click()
+                        if field_type == "radio":
+                            handled_radios.add(field_name)
+                        log_message(f"    Selected Radio/Checkbox Option: Yes")
+                elif answer.lower() == "no":
+                    if (value and "no" in value.lower() or "false" in value.lower() or "0" == value) or "no" in label_text:
+                        field.click()
+                        if field_type == "radio":
+                            handled_radios.add(field_name)
+                        log_message(f"    Selected Radio/Checkbox Option: No")
+                else:
+                    field.click()
+                    if field_type == "radio":
+                        handled_radios.add(field_name)
+                    log_message(f"    Clicked default Radio/Checkbox Option")
+                    
+            elif field.evaluate("el => el.tagName") == "SELECT":
+                options = field.locator("option").all()
+                selected = False
+                for opt in options:
+                    opt_text = opt.inner_text().lower()
+                    opt_val = opt.get_attribute("value")
+                    if answer.lower() in opt_text or (opt_val and answer.lower() in opt_val.lower()):
+                        field.select_option(value=opt_val)
+                        selected = True
+                        log_message(f"    Selected Dropdown Option: '{opt.inner_text().strip()}'")
+                        break
+                if not selected and len(options) > 1:
+                    field.select_option(index=1)
+                    log_message(f"    Selected default Dropdown Option: '{options[1].inner_text().strip()}'")
+            else:
+                field.fill(answer)
+                log_message(f"    Filled Text Value: '{answer}'")
+                
+        except Exception as e:
+            log_message(f"    [!] Error filling field: {e}")
+            
+    submit_selectors = [
+        "button:has-text('Submit')",
+        "button:has-text('Save')",
+        "button:has-text('Confirm')",
+        "input[type='submit']",
+        "xpath=//button[contains(text(), 'Submit') or contains(text(), 'Save') or contains(text(), 'Apply')]"
+    ]
+    
+    for selector in submit_selectors:
+        try:
+            btn = job_page.locator(selector)
+            if btn.first.is_visible(timeout=2000):
+                btn.first.click()
+                log_message("[+] Clicked Submit/Save button in Questionnaire.")
+                job_page.wait_for_timeout(4000)
+                return True
+        except Exception:
+            continue
+            
+    return False
+
 def apply_jobs(query="SAP Security", limit=5, headless=True):
     log_message(f"[*] Initiating auto-apply for '{query}' (Limit: {limit} jobs)...")
     if not os.path.exists(SESSION_DIR):
@@ -237,7 +419,6 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                     continue
                     
             if not job_urls:
-                # Fallback: Find all links to job listings
                 links = page.locator("a").all()
                 for link in links:
                     try:
@@ -273,20 +454,25 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                     ]
                     
                     is_company_site = False
+                    external_url = None
                     for selector in company_site_selectors:
                         try:
-                            if job_page.locator(selector).first.is_visible(timeout=1000):
+                            locator = job_page.locator(selector)
+                            if locator.first.is_visible(timeout=1000):
                                 is_company_site = True
+                                tag_name = locator.first.evaluate("el => el.tagName.toLowerCase()")
+                                if tag_name == "a":
+                                    external_url = locator.first.get_attribute("href")
                                 break
                         except Exception:
                             continue
                             
                     if is_company_site:
-                        log_message("[-] Job requires application on third-party company site. Skipping.")
+                        log_message("[-] Job requires application on third-party company site. Emailing link and skipping.")
+                        send_external_job_email(url, external_url)
                         job_page.close()
                         continue
                         
-                    # Locate direct Apply buttons
                     apply_selectors = [
                         "xpath=//button[text()='Apply' or text()='Easy Apply' or contains(text(), 'Quick Apply')]",
                         "css=button.apply-button",
@@ -310,8 +496,14 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                         
                         # Verify if a questionnaire or registration page was triggered
                         new_content = job_page.content().lower()
-                        if "questionnaire" in new_content or "survey" in new_content or "answer" in new_content:
-                            log_message("[!] Warning: Application page loaded custom questions. Skipping to prevent invalid submit.")
+                        if "questionnaire" in new_content or "survey" in new_content or "answer" in new_content or job_page.locator("input[type='text'], textarea, select").count() > 0:
+                            log_message("[*] Questionnaire detected. Attempting to answer questions...")
+                            success = handle_questionnaire(job_page)
+                            if success:
+                                log_message("[+] Successfully filled and submitted questionnaire!")
+                                applied_count += 1
+                            else:
+                                log_message("[!] Failed to complete questionnaire automatically.")
                         else:
                             log_message("[+] Successfully applied to job!")
                             applied_count += 1
@@ -325,7 +517,7 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                         job_page.close()
                     except Exception:
                         pass
-                    job_page.wait_for_timeout(1000)
+                    page.wait_for_timeout(1000)
                     
         except Exception as e:
             log_message(f"[!] Error during job apply flow: {e}")
