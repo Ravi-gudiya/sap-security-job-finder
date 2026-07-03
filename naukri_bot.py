@@ -7,7 +7,7 @@ import datetime
 import urllib.parse
 from playwright.sync_api import sync_playwright
 
-SESSION_DIR = os.path.join(os.path.dirname(__file__), "naukri_profile")
+STATE_FILE = os.path.join(os.path.dirname(__file__), "naukri_state.json")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "naukri_bot.log")
 
 def log_message(message):
@@ -22,18 +22,16 @@ def log_message(message):
 
 def login_setup():
     log_message("[*] Starting browser for one-time manual login...")
-    if not os.path.exists(SESSION_DIR):
-        os.makedirs(SESSION_DIR)
-        
     with sync_playwright() as p:
-        browser = p.chromium.launch_persistent_context(
-            user_data_dir=SESSION_DIR,
+        browser = p.chromium.launch(
             headless=False,
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800},
             args=["--disable-blink-features=AutomationControlled"]
         )
-        page = browser.pages[0] if browser.pages else browser.new_page()
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 800}
+        )
+        page = context.new_page()
         page.goto("https://www.naukri.com/nlogin/login")
         
         log_message("[!] PLEASE LOG IN MANUALLY IN THE OPENED BROWSER WINDOW.")
@@ -51,28 +49,32 @@ def login_setup():
             log_message("[!] Warning: It seems you are not logged in. Redirected to login page.")
         else:
             log_message("[+] Login verified successfully!")
+            context.storage_state(path=STATE_FILE)
+            log_message(f"[+] Session state saved to: {STATE_FILE}")
             
         browser.close()
         
-    log_message("[+] Session setup completed and browser context saved.")
+    log_message("[+] Session setup completed.")
 
 def update_profile(headless=True):
     log_message("[*] Initiating Naukri profile auto-update...")
-    if not os.path.exists(SESSION_DIR):
-        log_message("[!] Error: Session directory not found. Please run with '--setup' first.")
+    if not os.path.exists(STATE_FILE):
+        log_message("[!] Error: Session state file not found. Please run with '--setup' first.")
         return False
         
     success = False
     with sync_playwright() as p:
         try:
-            browser = p.chromium.launch_persistent_context(
-                user_data_dir=SESSION_DIR,
+            browser = p.chromium.launch(
                 headless=headless,
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 800},
-                args=["--disable-blink-features=AutomationControlled", "--start-minimized"]
+                args=["--disable-blink-features=AutomationControlled"]
             )
-            page = browser.pages[0] if browser.pages else browser.new_page()
+            context = browser.new_context(
+                storage_state=STATE_FILE,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800}
+            )
+            page = context.new_page()
             
             log_message("[*] Navigating to profile page...")
             page.goto("https://www.naukri.com/mnjuser/profile")
@@ -160,6 +162,7 @@ def update_profile(headless=True):
                 page.wait_for_timeout(2000)
                 
             page.wait_for_timeout(4000)
+            context.storage_state(path=STATE_FILE)
             log_message("[+] Profile update completed successfully!")
             success = True
             
@@ -388,21 +391,23 @@ def handle_questionnaire(job_page):
 
 def apply_jobs(query="SAP Security", limit=5, headless=True):
     log_message(f"[*] Initiating auto-apply for '{query}' (Limit: {limit} jobs)...")
-    if not os.path.exists(SESSION_DIR):
-        log_message("[!] Error: Session directory not found. Please run with '--setup' first.")
+    if not os.path.exists(STATE_FILE):
+        log_message("[!] Error: Session state file not found. Please run with '--setup' first.")
         return 0
         
     applied_count = 0
     with sync_playwright() as p:
         try:
-            browser = p.chromium.launch_persistent_context(
-                user_data_dir=SESSION_DIR,
+            browser = p.chromium.launch(
                 headless=headless,
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 800},
-                args=["--disable-blink-features=AutomationControlled", "--start-minimized"]
+                args=["--disable-blink-features=AutomationControlled"]
             )
-            page = browser.pages[0] if browser.pages else browser.new_page()
+            context = browser.new_context(
+                storage_state=STATE_FILE,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800}
+            )
+            page = context.new_page()
             
             encoded_query = urllib.parse.quote(query)
             search_url = f"https://www.naukri.com/{encoded_query.replace('%20', '-')}-jobs?k={encoded_query}"
@@ -449,7 +454,7 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                     break
                     
                 log_message(f"[*] [{index+1}/{len(job_urls)}] Inspecting job page: {url}")
-                job_page = browser.new_page()
+                job_page = context.new_page()
                 try:
                     job_page.goto(url, timeout=20000)
                     job_page.wait_for_timeout(4000)
@@ -541,6 +546,10 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
             except Exception as ex:
                 log_message(f"[!] Failed to save screenshot: {ex}")
         finally:
+            try:
+                context.storage_state(path=STATE_FILE)
+            except Exception as se:
+                log_message(f"[!] Failed to save storage state: {se}")
             try:
                 browser.close()
             except Exception:
