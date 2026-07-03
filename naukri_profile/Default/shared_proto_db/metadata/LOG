@@ -1,3 +1,3 @@
-2026/07/03-09:19:16.114 91d Reusing MANIFEST /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/shared_proto_db/metadata/MANIFEST-000001
-2026/07/03-09:19:16.115 91d Recovering log #3
-2026/07/03-09:19:16.115 91d Reusing old log /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/shared_proto_db/metadata/000003.log 
+2026/07/03-10:08:00.412 924 Reusing MANIFEST /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/shared_proto_db/metadata/MANIFEST-000001
+2026/07/03-10:08:00.412 924 Recovering log #3
+2026/07/03-10:08:00.412 924 Reusing old log /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/shared_proto_db/metadata/000003.log 
