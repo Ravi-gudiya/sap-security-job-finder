@@ -1,0 +1,192 @@
+window.JOBS_DATABASE = [
+  {
+    "title": "Junior SAP Security Analyst",
+    "company": "TCS",
+    "location": "Bengaluru, India",
+    "experience_years": 1,
+    "url": "https://ibegin.tcs.com/iBegin/jobs/search",
+    "posted_date": "2026-06-27",
+    "type": "Full-time",
+    "skills": ["SAP Security", "PFCG", "User Administration"]
+  },
+  {
+    "title": "Associate SAP Security Consultant",
+    "company": "Accenture",
+    "location": "Hyderabad, India",
+    "experience_years": 2,
+    "url": "https://www.accenture.com/in-en/careers/jobsearch",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["SAP Security", "PFCG", "User Provisioning", "S/4HANA"]
+  },
+  {
+    "title": "SAP S/4HANA Security Consultant",
+    "company": "NTT DATA",
+    "location": "Bengaluru, India",
+    "experience_years": 5,
+    "url": "https://careers.deloitte.com/jobs",
+    "posted_date": "2026-06-25",
+    "type": "Full-time",
+    "skills": ["S/4HANA Security", "SAP Fiori", "PFCG", "Role Design"]
+  },
+  {
+    "title": "Senior Security Analyst (Global Cloud Ops)",
+    "company": "SAP",
+    "location": "Bengaluru, India",
+    "experience_years": 5,
+    "url": "https://jobs.sap.com/job/Bangalore-Senior-Security-Analyst-Req-454250/",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["SAP Security", "Incident Response", "SAP Basis Security", "SIEM"]
+  },
+  {
+    "title": "Package Specialist – SAP Application Security",
+    "company": "IBM India",
+    "location": "Bengaluru, India",
+    "experience_years": 6,
+    "url": "https://careers.ibm.com/job/18974530/package-specialist-sap-application-security/",
+    "posted_date": "2026-06-24",
+    "type": "Full-time",
+    "skills": ["SAP GRC AC", "HANA Security", "Access Control", "User Management"]
+  },
+  {
+    "title": "SAP Security and GRC Lead Consultant",
+    "company": "Cigres Technologies",
+    "location": "Bengaluru, India",
+    "experience_years": 8,
+    "url": "https://in.indeed.com/jobs?q=title%3A%28%22SAP+Security%22%29+company%3A%28%22Cigres%22%29",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["SAP Fiori", "SAP GRC", "Access Control", "User Administration", "SoD"]
+  },
+  {
+    "title": "SAP GRC Security Specialist",
+    "company": "TCS",
+    "location": "Bengaluru, India",
+    "experience_years": 6,
+    "url": "https://ibegin.tcs.com/iBegin/jobs/search",
+    "posted_date": "2026-06-24",
+    "type": "Full-time",
+    "skills": ["SAP GRC AC 12.0", "Segregation of Duties", "Emergency Access Management"]
+  },
+  {
+    "title": "SAP Security Consultant - GRC AC",
+    "company": "Deloitte India",
+    "location": "Bengaluru, India",
+    "experience_years": 4,
+    "url": "https://careers.deloitte.com/jobs",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["SAP GRC", "Access Control", "S/4HANA Security", "Role Administration"]
+  },
+  {
+    "title": "SAP Risk Advisory & Security Specialist",
+    "company": "EY India",
+    "location": "Mumbai, India",
+    "experience_years": 4,
+    "url": "https://careers.ey.com/search/?q=SAP%20Security",
+    "posted_date": "2026-06-22",
+    "type": "Full-time",
+    "skills": ["SAP Security Audit", "SOX Compliance", "GRC Process Control"]
+  },
+  {
+    "title": "SAP GRC Access Control Consultant",
+    "company": "EY India",
+    "location": "Bengaluru, India",
+    "experience_years": 5,
+    "url": "https://careers.ey.com/search/?q=SAP%20Security",
+    "posted_date": "2026-06-27",
+    "type": "Full-time",
+    "skills": ["SAP GRC AC", "Access Control", "SoD Analysis", "PFCG"]
+  },
+  {
+    "title": "SAP Security Consultant",
+    "company": "PwC India",
+    "location": "Mumbai, India",
+    "experience_years": 6,
+    "url": "https://jobs.us.pwc.com/search-jobs/SAP%20Security",
+    "posted_date": "2026-06-25",
+    "type": "Full-time",
+    "skills": ["SAP Security Audit", "SOX Controls", "GRC Access Control", "Role Build"]
+  },
+  {
+    "title": "SAP Enterprise Security Consultant",
+    "company": "Infosys",
+    "location": "Bengaluru, India",
+    "experience_years": 5,
+    "url": "https://career.infosys.com",
+    "posted_date": "2026-06-27",
+    "type": "Full-time",
+    "skills": ["SAP Security", "GRC 12.0", "HANA Security", "Fiori Role Management"]
+  },
+  {
+    "title": "SAP Security Specialist",
+    "company": "Capgemini",
+    "location": "Pune, India",
+    "experience_years": 7,
+    "url": "https://www.capgemini.com/in-en/careers",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["S/4HANA Security", "PFCG Role Design", "SoD Remediation", "Fiori Catalogs"]
+  },
+  {
+    "title": "SAP Security & UI Masking Consultant",
+    "company": "HCLTech",
+    "location": "Noida, India (Remote)",
+    "experience_years": 5,
+    "url": "https://www.hcltech.com/careers",
+    "posted_date": "2026-06-27",
+    "type": "Full-time",
+    "skills": ["SAP Basis Security", "S/4HANA", "Fiori Catalogs", "Audit Trails", "UI Masking"]
+  },
+  {
+    "title": "SAP Security Senior Consultant",
+    "company": "Deloitte",
+    "location": "Dallas, TX, USA",
+    "experience_years": 7,
+    "url": "https://careers.deloitte.com/jobs",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["S/4HANA Security", "SAP Fiori", "IAM", "Client Facing"]
+  },
+  {
+    "title": "SAP Cybersecurity & Compliance Manager",
+    "company": "PwC",
+    "location": "Chicago, IL, USA",
+    "experience_years": 10,
+    "url": "https://jobs.us.pwc.com/search-jobs/SAP%20Security",
+    "posted_date": "2026-06-25",
+    "type": "Full-time",
+    "skills": ["Project Management", "SAP Security Architecture", "SOX Control", "GRC 12.0"]
+  },
+  {
+    "title": "SAP Security Engineer",
+    "company": "SecurityBridge",
+    "location": "Remote, USA",
+    "experience_years": 5,
+    "url": "https://www.linkedin.com/jobs/search/?keywords=SecurityBridge%20SAP%20Security",
+    "posted_date": "2026-06-24",
+    "type": "Full-time",
+    "skills": ["Vulnerability Management", "ABAP Security Code Scan", "SAP ETD"]
+  },
+  {
+    "title": "Cloud Security Engineer - SAP BTP",
+    "company": "SAP",
+    "location": "Walldorf, Germany",
+    "experience_years": 5,
+    "url": "https://jobs.sap.com/search/?q=BTP+Security",
+    "posted_date": "2026-06-26",
+    "type": "Full-time",
+    "skills": ["SAP BTP Security", "SAP IAS/IPS", "Cloud ALM", "English Language"]
+  },
+  {
+    "title": "Senior Consultant SAP Security & GRC",
+    "company": "EY",
+    "location": "Munich, Germany",
+    "experience_years": 6,
+    "url": "https://careers.ey.com/search/?q=SAP%20Security",
+    "posted_date": "2026-06-21",
+    "type": "Full-time",
+    "skills": ["SAP GRC AC/PC", "SoD Audit", "German Language", "Client Management"]
+  }
+];

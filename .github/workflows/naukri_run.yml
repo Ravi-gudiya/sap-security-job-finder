@@ -1,0 +1,58 @@
+name: Naukri Auto Update & Apply
+
+on:
+  schedule:
+    # 3:00 AM UTC = 8:30 AM IST
+    - cron: '0 3 * * *'
+    # 12:00 PM UTC = 5:30 PM IST
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+# Permissions required to commit and push the updated cookies/session state
+permissions:
+  contents: write
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+
+      - name: Install Playwright Browsers
+        run: |
+          playwright install chromium
+
+      - name: Run Naukri Automation Bot
+        run: |
+          # xvfb-run starts a virtual display buffer so Chromium can run in headed mode (headless=False)
+          # which is required to bypass Naukri's bot detection.
+          xvfb-run python naukri_bot.py --run --limit 5
+
+      - name: Commit & Push Updated Session State
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add naukri_profile/
+          
+          # Only commit and push if there are modified files in naukri_profile
+          if [ -n "$(git status --porcelain naukri_profile/)" ]; then
+            git commit -m "Sync Naukri session cookies [skip ci]"
+            git push
+          else
+            echo "No session changes detected."
+          fi

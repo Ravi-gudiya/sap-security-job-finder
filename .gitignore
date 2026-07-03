@@ -1,0 +1,17 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+*.pyc
+__pycache__/
+
+# Log files (these should remain local)
+*.log
+
+# Temp debug and error assets
+error_*.png
+profile_debug*
+*.html
+
+# Note: We are explicitly NOT ignoring the naukri_profile/ folder
+# because it contains the active session cookies needed by GitHub Actions.
