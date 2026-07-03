@@ -478,13 +478,18 @@ def handle_questionnaire(job_page):
             
     return False
 
-def apply_jobs(query="SAP Security", limit=5, headless=True):
-    log_message(f"[*] Initiating auto-apply for '{query}' (Limit: {limit} jobs)...")
+def apply_jobs(queries=None, limit=20, headless=True):
+    if not queries:
+        queries = ["SAP Security", "GRC Security", "SAP Security Consultant", "SAP Security Administrator", "SAP GRC Security", "Fiori Security"]
+        
+    log_message(f"[*] Initiating auto-apply for queries: {queries} (Limit: {limit} jobs total)...")
     if not os.path.exists(STATE_FILE):
         log_message("[!] Error: Session state file not found. Please run with '--setup' first.")
         return 0
         
     applied_count = 0
+    processed_urls = set()
+    
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch(
@@ -498,133 +503,165 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
             )
             page = context.new_page()
             
-            encoded_query = urllib.parse.quote(query)
-            search_url = f"https://www.naukri.com/{encoded_query.replace('%20', '-')}-jobs?k={encoded_query}"
-            log_message(f"[*] Navigating to search URL: {search_url}")
-            page.goto(search_url)
-            page.wait_for_timeout(6000)
-            
-            log_message("[*] Waiting for job listings to load...")
-            job_cards_selector = "div.srp-job-tuple, div[data-job-id], article"
-            try:
-                page.wait_for_selector(job_cards_selector, timeout=12000)
-            except Exception:
-                log_message("[!] Timeout waiting for job cards. Trying generic links...")
-                
-            card_elements = page.locator("div.srp-job-tuple, div[data-job-id]").all()
-            log_message(f"[*] Found {len(card_elements)} job listings on the page.")
-            
-            job_urls = []
-            for card in card_elements:
-                try:
-                    title_link = card.locator("a.title")
-                    if title_link.count() > 0:
-                        href = title_link.first.get_attribute("href")
-                        if href and href.startswith("http"):
-                            job_urls.append(href)
-                except Exception:
-                    continue
-                    
-            if not job_urls:
-                links = page.locator("a").all()
-                for link in links:
-                    try:
-                        href = link.get_attribute("href")
-                        if href and "/job-listings-" in href and href not in job_urls:
-                            job_urls.append(href)
-                    except Exception:
-                        continue
-            
-            log_message(f"[+] Collected {len(job_urls)} job details URLs.")
-            
-            for index, url in enumerate(job_urls):
+            for query in queries:
                 if applied_count >= limit:
-                    log_message(f"[*] Reached application limit of {limit} for this run. Stopping.")
+                    log_message(f"[*] Reached total application limit of {limit}. Stopping.")
                     break
                     
-                log_message(f"[*] [{index+1}/{len(job_urls)}] Inspecting job page: {url}")
-                job_page = context.new_page()
+                log_message(f"\n[*] Searching for query: '{query}'...")
+                encoded_query = urllib.parse.quote(query)
+                search_url = f"https://www.naukri.com/{encoded_query.replace('%20', '-')}-jobs?k={encoded_query}"
+                log_message(f"[*] Navigating to search URL: {search_url}")
+                
                 try:
-                    job_page.goto(url, timeout=20000)
-                    job_page.wait_for_timeout(4000)
+                    page.goto(search_url)
+                    page.wait_for_timeout(6000)
                     
-                    page_text = job_page.content().lower()
-                    if "already applied" in page_text or "applied" in page_text:
-                        log_message("[-] Already applied. Skipping.")
-                        job_page.close()
-                        continue
-                        
-                    # Check for external company site redirects
-                    company_site_selectors = [
-                        "xpath=//button[contains(text(), 'Apply on company') or contains(text(), 'Company site')]",
-                        "xpath=//a[contains(text(), 'Apply on company') or contains(text(), 'Company site')]"
-                    ]
-                    
-                    is_company_site = False
-                    external_url = None
-                    for selector in company_site_selectors:
-                        try:
-                            locator = job_page.locator(selector)
-                            if locator.first.is_visible(timeout=1000):
-                                is_company_site = True
-                                tag_name = locator.first.evaluate("el => el.tagName.toLowerCase()")
-                                if tag_name == "a":
-                                    external_url = locator.first.get_attribute("href")
-                                break
-                        except Exception:
-                            continue
-                            
-                    if is_company_site:
-                        log_message("[-] Job requires application on third-party company site. Emailing link and skipping.")
-                        send_external_job_email(url, external_url)
-                        job_page.close()
-                        continue
-                        
-                    apply_selectors = [
-                        "xpath=//button[text()='Apply' or text()='Easy Apply' or contains(text(), 'Quick Apply')]",
-                        "css=button.apply-button",
-                        "xpath=//button[contains(@class, 'apply')]"
-                    ]
-                    
-                    apply_btn = None
-                    for selector in apply_selectors:
-                        try:
-                            locator = job_page.locator(selector)
-                            if locator.first.is_visible(timeout=2000):
-                                apply_btn = locator.first
-                                break
-                        except Exception:
-                            continue
-                            
-                    if apply_btn:
-                        log_message("[*] Clicking Apply button...")
-                        apply_btn.click()
-                        job_page.wait_for_timeout(5000)
-                        
-                        # Verify if a questionnaire or registration page was triggered
-                        new_content = job_page.content().lower()
-                        if "questionnaire" in new_content or "survey" in new_content or "answer" in new_content or job_page.locator("input[type='text'], textarea, select").count() > 0:
-                            log_message("[*] Questionnaire detected. Attempting to answer questions...")
-                            success = handle_questionnaire(job_page)
-                            if success:
-                                log_message("[+] Successfully filled and submitted questionnaire!")
-                                applied_count += 1
-                            else:
-                                log_message("[!] Failed to complete questionnaire automatically.")
-                        else:
-                            log_message("[+] Successfully applied to job!")
-                            applied_count += 1
-                    else:
-                        log_message("[-] Apply button not found or could not interact.")
-                        
-                except Exception as e:
-                    log_message(f"[!] Error processing job details page: {e}")
-                finally:
+                    job_cards_selector = "div.srp-job-tuple, div[data-job-id], article"
                     try:
-                        job_page.close()
+                        page.wait_for_selector(job_cards_selector, timeout=12000)
                     except Exception:
                         pass
-                    page.wait_for_timeout(1000)
+                        
+                    card_elements = page.locator("div.srp-job-tuple, div[data-job-id]").all()
+                    log_message(f"[*] Found {len(card_elements)} job listings on the page.")
+                    
+                    job_urls = []
+                    for card in card_elements:
+                        try:
+                            title_link = card.locator("a.title")
+                            if title_link.count() > 0:
+                                href = title_link.first.get_attribute("href")
+                                if href and href.startswith("http") and href not in processed_urls:
+                                    job_urls.append(href)
+                                    processed_urls.add(href)
+                        except Exception:
+                            continue
+                            
+                    if not job_urls:
+                        links = page.locator("a").all()
+                        for link in links:
+                            try:
+                                href = link.get_attribute("href")
+                                if href and "/job-listings-" in href and href not in job_urls and href not in processed_urls:
+                                    job_urls.append(href)
+                                    processed_urls.add(href)
+                            except Exception:
+                                continue
+                                
+                    log_message(f"[+] Collected {len(job_urls)} new job details URLs for '{query}'.")
+                    
+                    for index, url in enumerate(job_urls):
+                        if applied_count >= limit:
+                            log_message(f"[*] Reached application limit of {limit} for this run. Stopping.")
+                            break
+                            
+                        log_message(f"[*] [{index+1}/{len(job_urls)}] Inspecting job page: {url}")
+                        job_page = context.new_page()
+                        try:
+                            job_page.goto(url, timeout=20000)
+                            job_page.wait_for_timeout(4000)
+                            
+                            page_text = job_page.content().lower()
+                            if "already applied" in page_text or "applied" in page_text:
+                                log_message("[-] Already applied. Skipping.")
+                                job_page.close()
+                                continue
+                                
+                            # Check for external company site redirects (case-insensitive text)
+                            company_site_selectors = [
+                                "text=Apply on company",
+                                "text=Company site",
+                                "text=Company website",
+                                "text=Apply on employer",
+                                "text=Apply on external",
+                                "text=Employer website",
+                                "text=External website"
+                            ]
+                            
+                            is_company_site = False
+                            external_url = None
+                            for selector in company_site_selectors:
+                                try:
+                                    locator = job_page.locator(selector)
+                                    if locator.first.is_visible(timeout=1000):
+                                        is_company_site = True
+                                        external_url = locator.first.get_attribute("href")
+                                        if not external_url:
+                                            external_url = locator.first.evaluate("el => el.closest('a') ? el.closest('a').href : null")
+                                        break
+                                except Exception:
+                                    continue
+                                    
+                            if is_company_site:
+                                log_message("[-] Job requires application on third-party company site.")
+                                if not external_url:
+                                    try:
+                                        with job_page.context.expect_page(timeout=10000) as new_page_info:
+                                            for selector in company_site_selectors:
+                                                btn = job_page.locator(selector).first
+                                                if btn.is_visible():
+                                                    btn.click()
+                                                    break
+                                        new_page = new_page_info.value
+                                        new_page.wait_for_timeout(3000)
+                                        external_url = new_page.url
+                                        new_page.close()
+                                    except Exception as ex:
+                                        log_message(f"[!] Could not capture redirected external URL: {ex}")
+                                        
+                                log_message(f"[+] Extracted External Career Link: {external_url}")
+                                send_external_job_email(url, external_url)
+                                job_page.close()
+                                continue
+                                
+                            apply_selectors = [
+                                "xpath=//button[text()='Apply' or text()='Easy Apply' or contains(text(), 'Quick Apply')]",
+                                "css=button.apply-button",
+                                "xpath=//button[contains(@class, 'apply')]"
+                            ]
+                            
+                            apply_btn = None
+                            for selector in apply_selectors:
+                                try:
+                                    locator = job_page.locator(selector)
+                                    if locator.first.is_visible(timeout=2000):
+                                        apply_btn = locator.first
+                                        break
+                                except Exception:
+                                    continue
+                                    
+                            if apply_btn:
+                                log_message("[*] Clicking Apply button...")
+                                apply_btn.click()
+                                job_page.wait_for_timeout(5000)
+                                
+                                new_content = job_page.content().lower()
+                                chatbot_visible = job_page.locator("div[id*='ChatbotContainer'], div[class*='chatBotContainer']").first.is_visible(timeout=2000)
+                                if "questionnaire" in new_content or "survey" in new_content or "answer" in new_content or chatbot_visible or job_page.locator("input[type='text'], textarea, select").count() > 0:
+                                    log_message("[*] Questionnaire detected. Attempting to answer questions...")
+                                    success = handle_questionnaire(job_page)
+                                    if success:
+                                        log_message("[+] Successfully filled and submitted questionnaire!")
+                                        applied_count += 1
+                                    else:
+                                        log_message("[!] Failed to complete questionnaire automatically.")
+                                else:
+                                    log_message("[+] Successfully applied to job!")
+                                    applied_count += 1
+                            else:
+                                log_message("[-] Apply button not found or could not interact.")
+                                
+                        except Exception as e:
+                            log_message(f"[!] Error processing job details page: {e}")
+                        finally:
+                            try:
+                                job_page.close()
+                            except Exception:
+                                pass
+                            page.wait_for_timeout(1000)
+                except Exception as qe:
+                    log_message(f"[!] Error processing search query '{query}': {qe}")
                     
         except Exception as e:
             log_message(f"[!] Error during job apply flow: {e}")
@@ -643,7 +680,7 @@ def apply_jobs(query="SAP Security", limit=5, headless=True):
                 browser.close()
             except Exception:
                 pass
-            
+                
     log_message(f"[+] Completed run. Successfully applied to {applied_count} jobs.")
     return applied_count
 
@@ -652,8 +689,8 @@ def main():
     parser.add_argument("--setup", action="store_true", help="Run browser in headed mode to login manually")
     parser.add_argument("--update-profile", action="store_true", help="Auto-update the Naukri profile headline")
     parser.add_argument("--apply-jobs", action="store_true", help="Search and auto-apply for SAP Security jobs")
-    parser.add_argument("--query", type=str, default="SAP Security", help="Job search query")
-    parser.add_argument("--limit", type=int, default=5, help="Maximum number of job applications per run")
+    parser.add_argument("--query", type=str, default="SAP Security, GRC Security, SAP Security Consultant, SAP Security Administrator, SAP GRC Security, Fiori Security", help="Comma-separated job search queries")
+    parser.add_argument("--limit", type=int, default=20, help="Maximum number of job applications per run")
     parser.add_argument("--run", action="store_true", help="Run both profile update and job application")
     parser.add_argument("--headless", action="store_true", help="Run the browser in headless mode (warning: may get Access Denied)")
     args = parser.parse_args()
@@ -666,14 +703,14 @@ def main():
         login_setup()
         sys.exit(0)
         
-    # Default to headed mode (headless=False) because headless is blocked by Naukri
     headless = args.headless
     
     if args.run or args.update_profile:
         update_profile(headless=headless)
         
     if args.run or args.apply_jobs:
-        apply_jobs(query=args.query, limit=args.limit, headless=headless)
+        queries_list = [q.strip() for q in args.query.split(",") if q.strip()]
+        apply_jobs(queries=queries_list, limit=args.limit, headless=headless)
 
 if __name__ == "__main__":
     main()

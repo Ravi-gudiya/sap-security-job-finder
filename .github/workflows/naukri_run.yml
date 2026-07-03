@@ -47,7 +47,7 @@ jobs:
         run: |
           # xvfb-run starts a virtual display buffer so Chromium can run in headed mode (headless=False)
           # which is required to bypass Naukri's bot detection.
-          xvfb-run python naukri_bot.py --run --limit 20
+          xvfb-run python naukri_bot.py --run --limit 50
 
       - name: Commit & Push Updated Session State
         run: |
