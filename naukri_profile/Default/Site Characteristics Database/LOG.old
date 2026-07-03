@@ -1,3 +1,2 @@
-2026/07/03-14:43:00.025 3d1c Reusing MANIFEST C:\Users\alank\.gemini\antigravity\scratch\sap-security-job-finder\naukri_profile\Default\Site Characteristics Database/MANIFEST-000001
-2026/07/03-14:43:00.026 3d1c Recovering log #3
-2026/07/03-14:43:00.028 3d1c Reusing old log C:\Users\alank\.gemini\antigravity\scratch\sap-security-job-finder\naukri_profile\Default\Site Characteristics Database/000003.log 
+2026/07/03-09:19:07.701 8ac Creating DB /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/Site Characteristics Database since it was missing.
+2026/07/03-09:19:07.705 8ac Reusing MANIFEST /home/runner/work/sap-security-job-finder/sap-security-job-finder/naukri_profile/Default/Site Characteristics Database/MANIFEST-000001
