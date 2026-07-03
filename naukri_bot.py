@@ -291,7 +291,10 @@ def handle_questionnaire(job_page):
             elif "current" in q_lower and ("ctc" in q_lower or "salary" in q_lower or "lpa" in q_lower):
                 answer = "6,00,000" if field_type != "number" else "600000"
             elif "location" in q_lower or "city" in q_lower:
-                answer = "Bhubaneswar"
+                if field_type in ["radio", "checkbox"]:
+                    answer = "PreferredCity"
+                else:
+                    answer = "Bhubaneswar, Hyderabad, Bangalore, Chennai, Mysore"
             elif "sap" in q_lower or "security" in q_lower or "grc" in q_lower:
                 answer = "Yes" if field_type in ["radio", "checkbox"] else "2.6 Years"
             elif "relocate" in q_lower or "ready" in q_lower:
@@ -304,7 +307,7 @@ def handle_questionnaire(job_page):
                     answer = "Yes" if field_type in ["radio", "checkbox"] else "Immediate"
             
             if field_type in ["radio", "checkbox"]:
-                value = field.get_attribute("value")
+                value = (field.get_attribute("value") or "").lower()
                 label_text = field.evaluate("""
                     el => {
                         let label = el.nextElementSibling || el.previousElementSibling;
@@ -313,14 +316,24 @@ def handle_questionnaire(job_page):
                     }
                 """)
                 
+                # Check for preferred locations
+                preferred_cities = ["hyderabad", "bangalore", "bengaluru", "chennai", "mysore", "bhubaneswar", "any", "relocate"]
+                is_preferred_city = any(city in label_text or city in value for city in preferred_cities)
+                
+                if answer == "PreferredCity":
+                    if is_preferred_city:
+                        field.click()
+                        log_message(f"    Selected Preferred Location: '{label_text or value}'")
+                    continue
+                
                 if answer.lower() == "yes":
-                    if (value and "yes" in value.lower() or "true" in value.lower() or "1" == value) or "yes" in label_text:
+                    if (value and ("yes" in value or "true" in value or "1" == value)) or "yes" in label_text or is_preferred_city:
                         field.click()
                         if field_type == "radio":
                             handled_radios.add(field_name)
-                        log_message(f"    Selected Radio/Checkbox Option: Yes")
+                        log_message(f"    Selected Radio/Checkbox Option: Yes/Preferred")
                 elif answer.lower() == "no":
-                    if (value and "no" in value.lower() or "false" in value.lower() or "0" == value) or "no" in label_text:
+                    if (value and ("no" in value or "false" in value or "0" == value)) or "no" in label_text:
                         field.click()
                         if field_type == "radio":
                             handled_radios.add(field_name)
