@@ -241,9 +241,98 @@ Your Naukri Automation Bot"""
         log_message(f"[!] Error sending email: {e}")
         return False
 
+def handle_chatbot_questionnaire(job_page):
+    log_message("[*] Chatbot questionnaire detected. Initiating chatbot handler...")
+    
+    max_questions = 6
+    last_answered_question = ""
+    same_question_count = 0
+    
+    for step in range(max_questions):
+        job_page.wait_for_timeout(3000)
+        
+        container = job_page.locator("div[id*='ChatbotContainer'], div[class*='chatBotContainer']")
+        if not container.first.is_visible():
+            log_message("[+] Chatbot container is no longer visible. Assuming application completed!")
+            return True
+            
+        spans = job_page.locator("div[id*='ChatbotContainer'] li.botItem span").all()
+        if not spans:
+            log_message("[*] No question bubbles found yet. Waiting...")
+            continue
+            
+        latest_question = spans[-1].inner_text().strip()
+        log_message(f"[*] Chatbot Question: '{latest_question}'")
+        
+        if latest_question == last_answered_question:
+            same_question_count += 1
+            if same_question_count >= 3:
+                log_message("[!] Stuck on the same question. Breaking to prevent infinite loop.")
+                return False
+            log_message("[*] Question hasn't changed. Waiting for bot to process...")
+            job_page.wait_for_timeout(2000)
+            continue
+        else:
+            same_question_count = 0
+            
+        q_lower = latest_question.lower()
+        answer = None
+        
+        if "experience" in q_lower or "year" in q_lower:
+            answer = "2.6" if "how many" in q_lower else "2.6 Years"
+        elif "notice" in q_lower:
+            answer = "Immediate"
+        elif "expected" in q_lower and ("ctc" in q_lower or "salary" in q_lower or "lpa" in q_lower):
+            answer = "900000" if "number" in q_lower or "digit" in q_lower else "9,00,000"
+        elif "current" in q_lower and ("ctc" in q_lower or "salary" in q_lower or "lpa" in q_lower):
+            answer = "600000" if "number" in q_lower or "digit" in q_lower else "6,00,000"
+        elif "location" in q_lower or "city" in q_lower:
+            answer = "Bhubaneswar, Hyderabad, Bangalore, Chennai, Mysore"
+        elif "sap" in q_lower or "security" in q_lower or "grc" in q_lower:
+            answer = "Yes"
+        elif "relocate" in q_lower or "ready" in q_lower:
+            answer = "Yes"
+            
+        if not answer:
+            if "yes" in q_lower or "no" in q_lower:
+                answer = "Yes"
+            else:
+                answer = "Yes"
+                
+        log_message(f"    Answering: '{answer}'")
+        
+        input_box = job_page.locator("div[id*='userInput'][contenteditable='true'], div[class*='textArea'][contenteditable='true']").first
+        if not input_box.is_visible():
+            log_message("[!] Chatbot input box is not visible.")
+            return False
+            
+        input_box.focus()
+        input_box.fill("")
+        job_page.keyboard.type(answer)
+        job_page.wait_for_timeout(500)
+        
+        save_btn = job_page.locator("div[id*='sendMsg'], div[class*='sendMsg'], .sendMsg").first
+        if save_btn.is_visible():
+            save_btn.click()
+            log_message("    [+] Clicked Save/Send button.")
+            last_answered_question = latest_question
+        else:
+            log_message("[!] Save button not visible.")
+            return False
+            
+    return True
+
 def handle_questionnaire(job_page):
     log_message("[*] Checking for questionnaire / custom questions...")
+    
+    chatbot_container = job_page.locator("div[id*='ChatbotContainer'], div[class*='chatBotContainer']")
+    if chatbot_container.first.is_visible(timeout=2000):
+        return handle_chatbot_questionnaire(job_page)
+        
     fields = job_page.locator("input[type='text'], input[type='number'], input[type='tel'], textarea, select, input[type='radio'], input[type='checkbox']").all()
+    # Filter out header search bar fields to prevent false positives
+    fields = [f for f in fields if not f.evaluate("el => el.closest('#ni-gnb-searchbar, .search-bar')")]
+    
     if not fields:
         return False
         
