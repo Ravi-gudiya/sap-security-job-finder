@@ -2,14 +2,8 @@ name: Naukri Auto Update & Apply
 
 on:
   schedule:
-    # 2:30 AM UTC = 8:00 AM IST
-    - cron: '30 2 * * *'
-    # 3:30 AM UTC = 9:00 AM IST
-    - cron: '30 3 * * *'
-    # 8:30 AM UTC = 2:00 PM IST
-    - cron: '30 8 * * *'
-    # 11:30 AM UTC = 5:00 PM IST
-    - cron: '30 11 * * *'
+    # Run automatically every hour at minute 15
+    - cron: '15 * * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 # Permissions required to commit and push the updated cookies/session state

@@ -713,15 +713,17 @@ def main():
         
     headless = args.headless
     
+    profile_success = True
     if args.run or args.update_profile:
-        success = update_profile(headless=headless)
-        if not success:
-            log_message("[!] Profile update failed. Exiting with error.")
-            sys.exit(1)
+        profile_success = update_profile(headless=headless)
         
     if args.run or args.apply_jobs:
         queries_list = [q.strip() for q in args.query.split(",") if q.strip()]
         apply_jobs(queries=queries_list, limit=args.limit, headless=headless)
+        
+    if not profile_success:
+        log_message("[!] Profile update failed during the run. Exiting with error.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
