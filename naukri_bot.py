@@ -503,6 +503,14 @@ def apply_jobs(queries=None, limit=20, headless=True):
             )
             page = context.new_page()
             
+            # Verify session validity by navigating to profile page first
+            log_message("[*] Verifying session validity...")
+            page.goto("https://www.naukri.com/mnjuser/profile")
+            page.wait_for_timeout(4000)
+            if "nlogin" in page.url:
+                log_message("[!] Error: Session expired or not logged in. Exiting with error.")
+                sys.exit(1)
+                
             for query in queries:
                 if applied_count >= limit:
                     log_message(f"[*] Reached total application limit of {limit}. Stopping.")
@@ -706,7 +714,10 @@ def main():
     headless = args.headless
     
     if args.run or args.update_profile:
-        update_profile(headless=headless)
+        success = update_profile(headless=headless)
+        if not success:
+            log_message("[!] Profile update failed. Exiting with error.")
+            sys.exit(1)
         
     if args.run or args.apply_jobs:
         queries_list = [q.strip() for q in args.query.split(",") if q.strip()]
