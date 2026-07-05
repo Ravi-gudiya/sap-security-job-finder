@@ -326,11 +326,28 @@ def handle_questionnaire(job_page):
     log_message("[*] Checking for questionnaire / custom questions...")
     
     chatbot_container = job_page.locator("div[id*='ChatbotContainer'], div[class*='chatBotContainer']")
-    if chatbot_container.first.is_visible(timeout=2000):
+    has_questionnaire = False
+    
+    for attempt in range(8):
+        fields = job_page.locator("input[type='text'], input[type='number'], input[type='tel'], textarea, select, input[type='radio'], input[type='checkbox']").all()
+        fields = [f for f in fields if not f.evaluate("el => el.closest('#ni-gnb-searchbar, .search-bar')")]
+        
+        chatbot_visible = chatbot_container.first.is_visible()
+        visible_standard = any(f.is_visible() for f in fields)
+        
+        if chatbot_visible or visible_standard:
+            has_questionnaire = True
+            break
+        job_page.wait_for_timeout(1000)
+        
+    if not has_questionnaire:
+        log_message("[-] No questionnaire detected.")
+        return False
+        
+    if chatbot_container.first.is_visible():
         return handle_chatbot_questionnaire(job_page)
         
     fields = job_page.locator("input[type='text'], input[type='number'], input[type='tel'], textarea, select, input[type='radio'], input[type='checkbox']").all()
-    # Filter out header search bar fields to prevent false positives
     fields = [f for f in fields if not f.evaluate("el => el.closest('#ni-gnb-searchbar, .search-bar')")]
     
     if not fields:
@@ -414,24 +431,24 @@ def handle_questionnaire(job_page):
                 
                 if answer == "PreferredCity":
                     if is_preferred_city:
-                        field.click()
+                        field.click(force=True)
                         log_message(f"    Selected Preferred Location: '{label_text or value}'")
                     continue
                 
                 if answer.lower() == "yes":
                     if (value and ("yes" in value or "true" in value or "1" == value)) or "yes" in label_text or is_preferred_city:
-                        field.click()
+                        field.click(force=True)
                         if field_type == "radio":
                             handled_radios.add(field_name)
                         log_message(f"    Selected Radio/Checkbox Option: Yes/Preferred")
                 elif answer.lower() == "no":
                     if (value and ("no" in value or "false" in value or "0" == value)) or "no" in label_text:
-                        field.click()
+                        field.click(force=True)
                         if field_type == "radio":
                             handled_radios.add(field_name)
                         log_message(f"    Selected Radio/Checkbox Option: No")
                 else:
-                    field.click()
+                    field.click(force=True)
                     if field_type == "radio":
                         handled_radios.add(field_name)
                     log_message(f"    Clicked default Radio/Checkbox Option")
