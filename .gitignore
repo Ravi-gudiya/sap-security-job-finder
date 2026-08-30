@@ -15,3 +15,7 @@ profile_debug*
 
 # Note: We are explicitly NOT ignoring the naukri_profile/ folder
 # because it contains the active session cookies needed by GitHub Actions.
+
+# Session and state data containing private cookies
+naukri_state.json
+naukri_state.json.bak
