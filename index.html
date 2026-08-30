@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAP Security Consultant Portfolio & Console</title>
+  <meta name="description" content="Professional portfolio and interactive job aggregator portal for SAP Security, GRC, and compliance specialists. Scan resume and find direct apply links.">
+  <link rel="stylesheet" href="index.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PDF.js library for client-side PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+  <!-- Futuristic Preloader -->
+  <div id="preloader" class="preloader">
+    <div class="spinner-container">
+      <div class="preloader-spinner"></div>
+      <div class="preloader-ring"></div>
+    </div>
+    <span class="preloader-text">ESTABLISHING SECURE CONNECTION...</span>
+  </div>
+
+  <!-- Interactive Constellation Canvas Background -->
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="glow-bg"></div>
+  <div class="glow-bg-2"></div>
+  
+  <div class="app-container">
+    <!-- Portfolio Hero Section -->
+    <header class="portfolio-hero glass-card">
+      <div class="hero-content">
+        <div class="avatar-container">
+          <img src="avatar.jpg" alt="SAP Security Consultant Avatar" class="profile-avatar">
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="profile-info">
+          <h1 class="profile-name">Ravi Gudiya</h1>
+          <div class="typing-container">
+            <span class="typing-role" id="typing-role"></span><span class="caret">|</span>
+          </div>
+          <p class="profile-tagline">SAP Security & GRC Consultant specializing in S/4HANA Transformations, Identity Access Governance (IAG), and threat vulnerability remediation.</p>
+          
+          <div class="hero-actions">
+            <a href="#console-anchor" class="btn btn-primary hero-btn">
+              <i data-lucide="terminal"></i> Console Access
+            </a>
+            <a href="#" class="btn btn-secondary hero-btn" id="download-resume-btn">
+              <i data-lucide="download"></i> Download Resume
+            </a>
+          </div>
+          
+          <div class="hero-socials">
+            <a href="https://linkedin.com" target="_blank" class="social-icon" title="LinkedIn"><i data-lucide="linkedin"></i></a>
+            <a href="https://github.com" target="_blank" class="social-icon" title="GitHub"><i data-lucide="github"></i></a>
+            <a href="mailto:contact@example.com" class="social-icon" title="Email"><i data-lucide="mail"></i></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Anchored Job Console Section -->
+    <div id="console-anchor" class="console-section-header">
+      <h2><i data-lucide="cpu"></i> Security Console & Job Aggregator</h2>
+      <p>Scan your resume or query live database pipelines to align with active opportunities.</p>
+    </div>
+
+    <main class="app-content">
+      <!-- Search & Filters Sidebar -->
+      <aside class="search-sidebar">
+        <div class="glass-card sidebar-card">
+          <h2><i data-lucide="sliders-horizontal"></i> Search Criteria</h2>
+          
+          <div class="form-group">
+            <label for="location-input">
+              <i data-lucide="map-pin"></i> Target Location
+            </label>
+            <input type="text" id="location-input" placeholder="e.g. Bangalore, India, Remote, USA" value="India">
+            <div class="quick-chips">
+              <span class="chip" data-val="India">India</span>
+              <span class="chip" data-val="USA">USA</span>
+              <span class="chip" data-val="Germany">Germany</span>
+              <span class="chip" data-val="Remote">Remote</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="experience-input">
+              <i data-lucide="briefcase"></i> Experience (Years)
+            </label>
+            <div class="range-container">
+              <input type="range" id="experience-input" min="1" max="15" value="5">
+              <span class="range-value" id="experience-val">5 Years</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="role-type">
+              <i data-lucide="shield"></i> Security Sub-specialty
+            </label>
+            <select id="role-type">
+              <option value="SAP Security">General SAP Security</option>
+              <option value="SAP GRC">SAP GRC / Compliance</option>
+              <option value="SAP Basis Security">SAP Basis & Security</option>
+              <option value="SAP Security Consultant">SAP Security Consultant</option>
+            </select>
+          </div>
+
+          <button id="search-btn" class="btn btn-primary">
+            <i data-lucide="search"></i> Generate Job Links
+          </button>
+        </div>
+
+        <!-- Resume Scanner Card -->
+        <div class="glass-card sidebar-card resume-card">
+          <h2><i data-lucide="file-text"></i> Resume Scanner</h2>
+          <div class="form-group">
+            <label for="resume-file">
+              <i data-lucide="upload-cloud"></i> Upload Resume File (.pdf, .txt)
+            </label>
+            <div class="file-upload-wrapper">
+              <input type="file" id="resume-file" accept=".txt,.pdf" style="display: none;">
+              <button type="button" id="upload-trigger" class="btn btn-secondary btn-sm">
+                <i data-lucide="file-plus"></i> Choose File
+              </button>
+              <span id="file-name-display" class="file-name-text">No file selected</span>
+            </div>
+          </div>
+          
+          <div class="text-or-divider">
+            <span>OR</span>
+          </div>
+
+          <div class="form-group">
+            <label for="resume-input">Paste Resume Text</label>
+            <textarea id="resume-input" placeholder="Paste your resume text here to analyze skill matches..."></textarea>
+          </div>
+          <button id="scan-resume-btn" class="btn btn-primary">
+            <i data-lucide="cpu"></i> Analyze Match
+          </button>
+          <div class="resume-results" id="resume-results-panel" style="display: none;">
+            <div class="match-score-summary">
+              <span class="match-percentage" id="avg-match-pct">0%</span>
+              <span class="match-label">Avg Skill Match</span>
+            </div>
+            <div class="detected-skills">
+              <label>Detected Skills:</label>
+              <div class="detected-skills-chips" id="detected-skills-chips"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card info-card">
+          <h3><i data-lucide="info"></i> How it works</h3>
+          <p>This navigator maps directly to official company search portals. For company portals utilizing session-locked systems, we construct highly target-oriented Google Search parameters to land you directly on their active job application pages.</p>
+          <div class="utility-actions">
+            <button id="copy-search-string" class="btn btn-secondary btn-sm">
+              <i data-lucide="copy"></i> Copy Keywords
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Results Section -->
+      <section class="results-section">
+        <!-- Tabs Header -->
+        <div class="results-tabs">
+          <button class="tab-btn active" data-tab="job-portals">
+            <i data-lucide="globe"></i> Job Portals <span class="tab-badge" id="portals-count">6</span>
+          </button>
+          <button class="tab-btn" data-tab="company-portals">
+            <i data-lucide="building-2"></i> Company Portals <span class="tab-badge" id="companies-count">9</span>
+          </button>
+          <button class="tab-btn" data-tab="live-jobs">
+            <i data-lucide="activity"></i> Aggregated Openings <span class="tab-badge" id="live-jobs-count">0</span>
+          </button>
+        </div>
+
+        <!-- Tab Content: Job Portals -->
+        <div class="tab-content active" id="job-portals">
+          <div class="grid-layout" id="portals-grid">
+            <!-- Dynamic Cards generated via JS -->
+          </div>
+        </div>
+
+        <!-- Tab Content: Company Portals -->
+        <div class="tab-content" id="company-portals">
+          <div class="grid-layout" id="companies-grid">
+            <!-- Dynamic Cards generated via JS -->
+          </div>
+        </div>
+
+        <!-- Tab Content: Live Jobs -->
+        <div class="tab-content" id="live-jobs">
+          <div class="job-list-header">
+            <h3>Active Matching Postings</h3>
+            <span class="db-status"><i data-lucide="database"></i> Source: Local DB</span>
+          </div>
+          <div class="job-listings-stack" id="live-jobs-stack">
+            <!-- Dynamic cards from jobs_database.json -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>© 2026 Ravi Gudiya - SAP Security & GRC Consultant. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast">
+    <i data-lucide="check-circle" class="toast-icon"></i>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script src="jobs_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
